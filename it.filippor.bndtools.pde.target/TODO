@@ -8,7 +8,8 @@ org.eclipse.pde.internal.core.target.TargetDefinition.areContainersEqual(ITarget
 
 -use package instead of bundle verify version
 
--manage custom workspace location(wizard persist)
+-DONE manage custom workspace location(wizard persist)
+	-add UI
 -investigate source provider
 -investigate update on build listener
 	verify if getBundles in target location can be dynamic
@@ -35,6 +36,7 @@ OTHER DIRECTION
 
 VARIOUS
 -p2 obr maven bridge
+	add pde project maven dependency to target
 
 
 -internazionalize
