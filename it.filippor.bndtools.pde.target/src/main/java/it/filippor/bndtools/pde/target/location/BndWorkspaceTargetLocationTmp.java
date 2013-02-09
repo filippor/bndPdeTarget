@@ -40,10 +40,8 @@ import aQute.bnd.service.RepositoryPlugin.DownloadListener;
 import aQute.bnd.version.Version;
 
 /**
- * @author frossoni class cast exception in
- *         org.eclipse.pde.internal.core.target.
- *         TargetDefinition.areContainersEqual(ITargetLocation[],
- *         ITargetLocation[])
+ * Tmp becouse eclipse bug https://bugs.eclipse.org/bugs/show_bug.cgi?id=399942
+ * @author frossoni 
  */
 public class BndWorkspaceTargetLocationTmp extends AbstractBundleContainer
 		implements IBndWorkspaceTargetLocation {// implements
