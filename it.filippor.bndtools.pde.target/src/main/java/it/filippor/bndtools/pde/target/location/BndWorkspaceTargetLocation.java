@@ -29,7 +29,6 @@ import aQute.bnd.version.Version;
  * @author frossoni 
  */
 public class BndWorkspaceTargetLocation  extends PlatformObject implements IBndWorkspaceTargetLocation{
-	public static final String TYPE = "bndWorkspace";
 
 	private Workspace workspace ;
 	private File workspaceDir = null;

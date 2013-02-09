@@ -45,7 +45,6 @@ import aQute.bnd.version.Version;
  */
 public class BndWorkspaceTargetLocationTmp extends AbstractBundleContainer
 		implements IBndWorkspaceTargetLocation {// implements
-	public static final String TYPE = "bndWorkspace";
 
 	private Workspace workspace;
 	private File workspaceDir = null;

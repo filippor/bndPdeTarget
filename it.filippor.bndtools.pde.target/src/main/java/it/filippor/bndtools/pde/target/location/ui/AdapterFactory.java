@@ -1,6 +1,5 @@
 package it.filippor.bndtools.pde.target.location.ui;
 
-import it.filippor.bndtools.pde.target.location.BndWorkspaceTargetLocation;
 import it.filippor.bndtools.pde.target.location.IBndWorkspaceTargetLocation;
 
 import org.eclipse.core.runtime.IAdapterFactory;
