@@ -1,0 +1,47 @@
+verify bug 
+class cast exception
+org.eclipse.pde.internal.core.target.TargetDefinition.areContainersEqual(ITargetLocation[],ITargetLocation[])
+
+-verify licence image
+
+-label and image provider
+
+-use package instead of bundle verify version
+
+-manage custom workspace location(wizard persist)
+-investigate source provider
+-investigate update on build listener
+	verify if getBundles in target location can be dynamic
+-investigate launch
+	-group in launch configuration
+	-verify karaf launcher
+
+-new location for repository 
+	-obr maven (use bnd plugin for repository?) 
+	-bridge to bndtools import configuration or use directly
+		use bnd plugin for repository 
+	-karaf feature
+	-verify karaf eik
+	
+-resolve osgi capability package
+
+-export target as obr
+
+
+OTHER DIRECTION
+-let bndtools see pde project
+-bndtools plugin for p2
+-bndtools plugin for target
+
+VARIOUS
+-p2 obr maven bridge
+
+
+-internazionalize
+-test
+-licence plugin information
+-mavenize(tycho or bnd)
+
+-create blog 
+-github and blog
+-planet eclipse  planet osgi

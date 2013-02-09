@@ -1,0 +1,15 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Target
+Bundle-SymbolicName: it.filippor.bndtools.pde.target;singleton:=true
+Bundle-Version: 1.0.0.qualifier
+Bundle-Activator: it.filippor.bndtools.pde.target.Activator
+Bundle-Vendor: FilippoR
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-ActivationPolicy: lazy
+Require-Bundle: org.eclipse.ui.workbench;bundle-version="3.105.0",
+ org.eclipse.jface;bundle-version="3.8.300",
+ org.eclipse.pde.ui;bundle-version="3.8.0",
+ org.eclipse.core.resources;bundle-version="3.8.100",
+ org.eclipse.core.runtime;bundle-version="3.9.0",
+ biz.aQute.bndlib;bundle-version="2.0.0"
