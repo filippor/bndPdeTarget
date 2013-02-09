@@ -24,6 +24,7 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.pde.core.target.ITargetDefinition;
 import org.eclipse.pde.core.target.TargetBundle;
 import org.eclipse.pde.core.target.TargetFeature;
@@ -38,7 +39,6 @@ import aQute.bnd.build.Project;
 import aQute.bnd.build.Workspace;
 import aQute.bnd.osgi.Processor;
 import aQute.bnd.service.RepositoryPlugin;
-import aQute.bnd.service.RepositoryPlugin.DownloadListener;
 import aQute.bnd.version.Version;
 import aQute.service.reporter.Reporter;
 
@@ -218,23 +218,32 @@ public class BndWorkspaceTargetLocationTmp extends AbstractBundleContainer
 			final IProgressMonitor monitor) throws CoreException {
 
 		try {
+			monitor.beginTask("resolve bundle", 2);
 			Collection<Project> allProjects = getWorkspace().getAllProjects();
 			final List<TargetBundle> bundles = new ArrayList<>(
 					allProjects.size());
+			IProgressMonitor projectM = new SubProgressMonitor(monitor,allProjects.size());
 			for (Project project : allProjects) {
 				if(monitor.isCanceled() )return null;
-				monitor.subTask("process project " + project.getName());
+				projectM.subTask("process project " + project.getName());
 				for (File file : project.getBuildFiles(true)) {
 					bundles.add(new TargetBundle(file));
 				}
+				projectM.worked(1);
 			}
+			projectM.done();
+			IProgressMonitor cnfM = new SubProgressMonitor(monitor, 1);
 			if (importCnf) {
 				List<RepositoryPlugin> repositories = getWorkspace()
 						.getRepositories();
+				IProgressMonitor repositoriesM = new SubProgressMonitor(cnfM,repositories.size());
 				for (RepositoryPlugin repositoryPlugin : repositories) {
 					if(monitor.isCanceled() )return null;
+					repositoriesM.subTask("process " + repositoryPlugin);
 					List<String> list = repositoryPlugin.list(null);
+					IProgressMonitor listM = new SubProgressMonitor(repositoriesM, list.size());
 					for (String string : list) {
+						listM.subTask("process" + string);
 						if(monitor.isCanceled() )return null;
 						SortedSet<Version> versions = repositoryPlugin
 								.versions(string);
@@ -268,9 +277,15 @@ public class BndWorkspaceTargetLocationTmp extends AbstractBundleContainer
 							if(downloadAll)
 								dwnListener.getReason();
 						}
+						listM.worked(1);
 					}
+					listM.done();
+					repositoriesM.worked(1);
 				}
+				repositoriesM.done();
 			}
+			cnfM.done();
+			monitor.done();
 			return bundles.toArray(new TargetBundle[bundles.size()]);
 		} catch (Exception e) {
 			if (e instanceof CoreException)
