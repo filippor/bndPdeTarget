@@ -33,19 +33,25 @@ import org.w3c.dom.Element;
 import org.xml.sax.InputSource;
 import org.xml.sax.helpers.DefaultHandler;
 
+import aQute.bnd.build.DownloadBlocker;
 import aQute.bnd.build.Project;
 import aQute.bnd.build.Workspace;
+import aQute.bnd.osgi.Processor;
 import aQute.bnd.service.RepositoryPlugin;
 import aQute.bnd.service.RepositoryPlugin.DownloadListener;
 import aQute.bnd.version.Version;
+import aQute.service.reporter.Reporter;
 
 /**
  * Tmp becouse eclipse bug https://bugs.eclipse.org/bugs/show_bug.cgi?id=399942
- * @author frossoni 
+ * 
+ * @author frossoni
  */
 public class BndWorkspaceTargetLocationTmp extends AbstractBundleContainer
 		implements IBndWorkspaceTargetLocation {// implements
 
+	private boolean importCnf = true;
+	private boolean downloadAll = false;
 	private Workspace workspace;
 	private File workspaceDir = null;
 
@@ -190,12 +196,7 @@ public class BndWorkspaceTargetLocationTmp extends AbstractBundleContainer
 
 	@Override
 	public boolean isContentEqual(AbstractBundleContainer container) {
-		if (container instanceof IBndWorkspaceTargetLocation) {
-			return workspaceDir
-					.equals(((IBndWorkspaceTargetLocation) container)
-							.getWorkspaceDir());
-		}
-		return false;
+		return equals(container);
 	}
 
 	@Override
@@ -206,71 +207,70 @@ public class BndWorkspaceTargetLocationTmp extends AbstractBundleContainer
 		}
 		return false;
 	}
-	
+
 	@Override
 	public int hashCode() {
 		return workspaceDir.hashCode();
 	}
-	
+
 	@Override
 	protected TargetBundle[] resolveBundles(ITargetDefinition definition,
-			IProgressMonitor monitor) throws CoreException {
+			final IProgressMonitor monitor) throws CoreException {
 
 		try {
 			Collection<Project> allProjects = getWorkspace().getAllProjects();
 			final List<TargetBundle> bundles = new ArrayList<>(
 					allProjects.size());
 			for (Project project : allProjects) {
+				if(monitor.isCanceled() )return null;
 				monitor.subTask("process project " + project.getName());
 				for (File file : project.getBuildFiles(true)) {
 					bundles.add(new TargetBundle(file));
 				}
 			}
-			List<RepositoryPlugin> repositories = getWorkspace()
-					.getRepositories();
-			for (RepositoryPlugin repositoryPlugin : repositories) {
-				List<String> list = repositoryPlugin.list(null);
-				for (String string : list) {
-					SortedSet<Version> versions = repositoryPlugin
-							.versions(string);
-					for (Version version : versions) {
-						DownloadListener dwnListener = new DownloadListener() {
+			if (importCnf) {
+				List<RepositoryPlugin> repositories = getWorkspace()
+						.getRepositories();
+				for (RepositoryPlugin repositoryPlugin : repositories) {
+					if(monitor.isCanceled() )return null;
+					List<String> list = repositoryPlugin.list(null);
+					for (String string : list) {
+						if(monitor.isCanceled() )return null;
+						SortedSet<Version> versions = repositoryPlugin
+								.versions(string);
+						for (Version version : versions) {
+							if(monitor.isCanceled() )return null;
+							Reporter reporter = new Processor(){
 
 							@Override
-							public void success(File file) throws Exception {
-								if (file.exists()) {
-									bundles.add(new TargetBundle(file));
-									Activator.log(new Status(0,
-											Activator.PLUGIN_ID, "added  "
-													+ file));
+							public void trace(String msg, Object... parms) {
+								try {
+									bundles.add(new TargetBundle((File) parms[0]));
+								} catch (CoreException e) {
+									Activator.logException(e);
 								}
 							}
+								
+							};
+							DownloadBlocker dwnListener = new DownloadBlocker(reporter) {
 
-							@Override
-							public boolean progress(File file, int percentage)
-									throws Exception {
-								Activator.log(new Status(0,
-										Activator.PLUGIN_ID,
-										"interrupt download " + file));
-								return false;
-							}
+								@Override
+								public boolean progress(File file,
+										int percentage) throws Exception {
+									if(!downloadAll)return false;
+									if(monitor.isCanceled())return false;
+									return super.progress(file, percentage);
+								}
 
-							@Override
-							public void failure(File file, String reason)
-									throws Exception {
-								Activator.log(new Status(0,
-										Activator.PLUGIN_ID, "failed download "
-												+ file + "  " + reason));
-
-							}
-						};
-						repositoryPlugin
-								.get(string, version, null, dwnListener);
-
+							};
+							repositoryPlugin.get(string, version, null,
+									dwnListener);
+							if(downloadAll)
+								dwnListener.getReason();
+						}
 					}
 				}
 			}
-
 			return bundles.toArray(new TargetBundle[bundles.size()]);
 		} catch (Exception e) {
 			if (e instanceof CoreException)
