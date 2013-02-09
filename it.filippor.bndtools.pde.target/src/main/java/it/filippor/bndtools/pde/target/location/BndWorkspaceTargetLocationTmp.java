@@ -23,12 +23,14 @@ import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.pde.core.target.ITargetDefinition;
 import org.eclipse.pde.core.target.TargetBundle;
 import org.eclipse.pde.core.target.TargetFeature;
 import org.eclipse.pde.internal.core.target.AbstractBundleContainer;
+import org.eclipse.pde.internal.ui.correction.UpdateActivationResolution;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.InputSource;
@@ -52,6 +54,40 @@ public class BndWorkspaceTargetLocationTmp extends AbstractBundleContainer
 
 	private boolean importCnf = true;
 	private boolean downloadAll = false;
+	@Override
+	public boolean isImportCnf() {
+		return importCnf;
+	}
+
+	@Override
+	public void setImportCnf(boolean importCnf) {
+		this.importCnf = importCnf;
+		update();
+	}
+
+	@Override
+	public IStatus update() {
+		super.clearResolutionStatus();
+		return Status.OK_STATUS;
+	}
+
+	@Override
+	public boolean isDownloadAll() {
+		return downloadAll;
+	}
+
+	@Override
+	public void setDownloadAll(boolean downloadAll) {
+		this.downloadAll = downloadAll;
+		update();
+	}
+
+	@Override
+	public void setWorkspaceDir(File workspaceDir) {
+		this.workspaceDir = workspaceDir;
+		update();
+	}
+
 	private Workspace workspace;
 	private File workspaceDir = null;
 
@@ -201,16 +237,34 @@ public class BndWorkspaceTargetLocationTmp extends AbstractBundleContainer
 
 	@Override
 	public boolean equals(Object obj) {
-		if (obj instanceof IBndWorkspaceTargetLocation) {
-			IBndWorkspaceTargetLocation target = (IBndWorkspaceTargetLocation) obj;
-			return workspaceDir.equals(target.getWorkspaceDir());
-		}
-		return false;
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (!(obj instanceof IBndWorkspaceTargetLocation))
+			return false;
+		BndWorkspaceTargetLocationTmp other = (BndWorkspaceTargetLocationTmp) obj;
+		if (downloadAll != other.downloadAll)
+			return false;
+		if (importCnf != other.importCnf)
+			return false;
+		if (workspaceDir == null) {
+			if (other.workspaceDir != null)
+				return false;
+		} else if (!workspaceDir.equals(other.workspaceDir))
+			return false;
+		return true;
 	}
 
 	@Override
 	public int hashCode() {
-		return workspaceDir.hashCode();
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + (downloadAll ? 1231 : 1237);
+		result = prime * result + (importCnf ? 1231 : 1237);
+		result = prime * result
+				+ ((workspaceDir == null) ? 0 : workspaceDir.hashCode());
+		return result;
 	}
 
 	@Override

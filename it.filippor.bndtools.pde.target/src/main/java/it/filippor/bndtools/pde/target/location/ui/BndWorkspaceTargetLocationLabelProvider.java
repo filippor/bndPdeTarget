@@ -8,13 +8,11 @@ import org.eclipse.swt.graphics.Image;
 
 public class BndWorkspaceTargetLocationLabelProvider extends LabelProvider {
 
-	public BndWorkspaceTargetLocationLabelProvider(
-			IBndWorkspaceTargetLocation adaptableObject) {
+	public BndWorkspaceTargetLocationLabelProvider() {
 	}
 
 	@Override
 	public Image getImage(Object element) {
-		// TODO Auto-generated method stub
 		if (element instanceof IBndWorkspaceTargetLocation)
 			return Activator.getDefault().getImageRegistry()
 					.get(Activator.BNDTOOLS_LOGO_IMAGE_ID);

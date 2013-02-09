@@ -181,4 +181,21 @@ public class BndWorkspaceTargetLocation  extends PlatformObject implements IBndW
 	public File getWorkspaceDir() {
 		return workspaceDir;
 	}
+	public void setWorkspaceDir(File workspaceDir) {
+	}
+	public void setDownloadAll(boolean downloadAll) {
+	}
+	public boolean isDownloadAll() {
+		return false;
+	}
+	public void setImportCnf(boolean importCnf) {
+	}
+	public boolean isImportCnf() {
+		return false;
+	}
+	@Override
+	public IStatus update() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }
