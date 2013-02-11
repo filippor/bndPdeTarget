@@ -1,4 +1,4 @@
-package it.filippor.bndtools.pde.target.util;
+package it.filippor.eclipse.databinding.util;
 
 import java.util.HashMap;
 import java.util.Map;

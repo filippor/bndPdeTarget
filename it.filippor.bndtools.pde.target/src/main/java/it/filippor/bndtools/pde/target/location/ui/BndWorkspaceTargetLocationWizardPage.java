@@ -3,11 +3,11 @@ package it.filippor.bndtools.pde.target.location.ui;
 import it.filippor.bndtools.pde.target.Activator;
 import it.filippor.bndtools.pde.target.location.BndWorkspaceTargetLocationFactory;
 import it.filippor.bndtools.pde.target.location.IBndWorkspaceTargetLocation;
-import it.filippor.bndtools.pde.target.util.ControlDecorationAndDialogUpdater;
-import it.filippor.bndtools.pde.target.util.IPathStringValidator;
-import it.filippor.bndtools.pde.target.util.IPathToStringConverter;
-import it.filippor.bndtools.pde.target.util.NegateBooleanConverter;
-import it.filippor.bndtools.pde.target.util.StringToIPathConverter;
+import it.filippor.eclipse.databinding.util.ControlDecorationAndDialogUpdater;
+import it.filippor.eclipse.databinding.util.IPathStringValidator;
+import it.filippor.eclipse.databinding.util.IPathToStringConverter;
+import it.filippor.eclipse.databinding.util.NegateBooleanConverter;
+import it.filippor.eclipse.databinding.util.StringToIPathConverter;
 
 import org.eclipse.core.databinding.Binding;
 import org.eclipse.core.databinding.DataBindingContext;

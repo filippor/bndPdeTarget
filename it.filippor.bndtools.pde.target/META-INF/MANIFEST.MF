@@ -20,4 +20,12 @@ Require-Bundle: org.eclipse.ui.workbench;bundle-version="3.105.0",
  org.eclipse.core.databinding.property,
  org.eclipse.jface.databinding,
  com.ibm.icu
+Export-Package: it.filippor.eclipse.databinding.util;
+  uses:="org.eclipse.jface.wizard,
+   org.eclipse.core.runtime,
+   org.eclipse.core.databinding.validation,
+   org.eclipse.core.databinding.conversion,
+   org.eclipse.jface.databinding.fieldassist,
+   org.eclipse.jface.fieldassist,
+   org.eclipse.jface.dialogs"
 

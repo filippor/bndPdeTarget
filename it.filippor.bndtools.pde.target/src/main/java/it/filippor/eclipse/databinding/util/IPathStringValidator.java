@@ -1,4 +1,4 @@
-package it.filippor.bndtools.pde.target.util;
+package it.filippor.eclipse.databinding.util;
 
 import it.filippor.bndtools.pde.target.Activator;
 import it.filippor.bndtools.pde.target.location.ui.BndWorkspaceTargetLocationWizardPage;
