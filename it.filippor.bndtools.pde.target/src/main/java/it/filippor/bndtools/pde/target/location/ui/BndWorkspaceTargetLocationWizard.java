@@ -38,9 +38,9 @@ public class BndWorkspaceTargetLocationWizard extends Wizard implements
 
 	@Override
 	public boolean performFinish() {
-
+		if(!canFinish())return false;
 		targetLocation = targetLocationWizardPage.getTargetLocation();
-		return targetLocation.validate().isOK();
+		return true;
 
 	}
 }

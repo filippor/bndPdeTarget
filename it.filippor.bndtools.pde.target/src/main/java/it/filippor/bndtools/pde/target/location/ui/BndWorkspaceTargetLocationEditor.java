@@ -21,15 +21,16 @@ public class BndWorkspaceTargetLocationEditor implements ITargetLocationEditor {
 			final ITargetLocation targetLocation) {
 		return new Wizard() {
 			IBndWorkspaceTargetLocation targetLoc = (IBndWorkspaceTargetLocation) targetLocation;
+			private BndWorkspaceTargetLocationWizardPage page;
 			@Override
 			public void addPages() {
-				BndWorkspaceTargetLocationWizardPage page = new BndWorkspaceTargetLocationWizardPage(targetLoc);
+				page = new BndWorkspaceTargetLocationWizardPage(targetLoc);
 				super.addPages();
 				addPage(page);
 			}
 			@Override
 			public boolean performFinish() {
-				return targetLoc.validate().isOK();
+				return canFinish();
 			}
 		};
 	}

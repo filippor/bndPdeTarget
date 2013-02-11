@@ -3,13 +3,11 @@ package it.filippor.bndtools.pde.target.location.ui;
 import it.filippor.bndtools.pde.target.Activator;
 import it.filippor.bndtools.pde.target.location.BndWorkspaceTargetLocationFactory;
 import it.filippor.bndtools.pde.target.location.IBndWorkspaceTargetLocation;
+import it.filippor.bndtools.pde.target.util.ControlDecorationAndDialogUpdater;
 import it.filippor.bndtools.pde.target.util.IPathStringValidator;
 import it.filippor.bndtools.pde.target.util.IPathToStringConverter;
 import it.filippor.bndtools.pde.target.util.NegateBooleanConverter;
 import it.filippor.bndtools.pde.target.util.StringToIPathConverter;
-
-import java.util.HashMap;
-import java.util.Map;
 
 import org.eclipse.core.databinding.Binding;
 import org.eclipse.core.databinding.DataBindingContext;
@@ -22,9 +20,7 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.databinding.fieldassist.ControlDecorationSupport;
-import org.eclipse.jface.databinding.fieldassist.ControlDecorationUpdater;
 import org.eclipse.jface.databinding.swt.WidgetProperties;
-import org.eclipse.jface.fieldassist.ControlDecoration;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -44,7 +40,7 @@ public class BndWorkspaceTargetLocationWizardPage extends WizardPage {
 	public BndWorkspaceTargetLocationWizardPage(
 			IBndWorkspaceTargetLocation location) {
 		super("Configure bnd workspace");
-		if(targetLocation == null) {
+		if(location == null) {
 			isNew = true;
 			this.targetLocation = BndWorkspaceTargetLocationFactory.getInstance();
 		}else {
@@ -62,6 +58,8 @@ public class BndWorkspaceTargetLocationWizardPage extends WizardPage {
 	private Button btnIncludeConfigurationBundles;
 	private Binding binding;
 	private Binding binding1;
+
+	private ControlDecorationAndDialogUpdater updater;
 
 	public IBndWorkspaceTargetLocation getTargetLocation() {
 		return targetLocation;
@@ -129,25 +127,7 @@ public class BndWorkspaceTargetLocationWizardPage extends WizardPage {
 		btnDownloadBundles.setText("Download bundles");
 		setPageComplete(true);
 		initDataBindings();
-		ControlDecorationUpdater updater = new ControlDecorationUpdater() {
-			Map<ControlDecoration, IStatus> statusMap = new HashMap<>();
-
-			@Override
-			protected void update(ControlDecoration decoration, IStatus status) {
-				super.update(decoration, status);
-				if (status == null || status.isOK())
-					statusMap.remove(decoration);
-				else
-					statusMap.put(decoration, status);
-				setErrorMessage(null);
-				for (IStatus status1 : statusMap.values()) {
-					if (!status1.isOK()) {
-						setErrorMessage(status1.getMessage());
-						break;
-					}
-				}
-			}
-		};
+		updater = new ControlDecorationAndDialogUpdater(this);
 		ControlDecorationSupport.create(binding, SWT.LEAD | SWT.TOP, parent,
 				updater);
 		ControlDecorationSupport.create(binding1, SWT.LEAD | SWT.TOP, parent,
@@ -238,4 +218,6 @@ public class BndWorkspaceTargetLocationWizardPage extends WizardPage {
 		//
 		return bindingContext;
 	}
+	
+	
 }
