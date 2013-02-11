@@ -52,6 +52,7 @@ import aQute.service.reporter.Reporter;
  * 
  * @author frossoni
  */
+@SuppressWarnings("restriction")
 public class BndWorkspaceTargetLocationTmp extends AbstractBundleContainer
 		implements IBndWorkspaceTargetLocation {// implements
 
