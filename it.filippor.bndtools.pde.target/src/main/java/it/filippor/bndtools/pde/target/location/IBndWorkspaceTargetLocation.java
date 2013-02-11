@@ -1,16 +1,15 @@
 package it.filippor.bndtools.pde.target.location;
 
-import java.io.File;
-
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.pde.core.target.ITargetLocation;
 
 public interface IBndWorkspaceTargetLocation extends ITargetLocation{
 	public static final String TYPE = "bndWorkspace";
 	
-	public abstract File getWorkspaceDir();
+	public abstract IPath getWorkspaceDir();
 
-	public abstract void setWorkspaceDir(File workspaceDir);
+	public abstract void setWorkspaceDir(IPath workspaceDir);
 
 	public abstract void setDownloadAll(boolean downloadAll);
 
@@ -21,5 +20,9 @@ public interface IBndWorkspaceTargetLocation extends ITargetLocation{
 	public abstract boolean isImportCnf();
 
 	public abstract IStatus update();
+
+	public abstract IStatus validate();
+
+	IStatus validate(IPath workspaceDir1);
 
 }

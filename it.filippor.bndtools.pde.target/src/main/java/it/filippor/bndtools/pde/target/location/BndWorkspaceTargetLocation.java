@@ -12,6 +12,7 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.PlatformObject;
@@ -31,12 +32,12 @@ import aQute.bnd.version.Version;
 public class BndWorkspaceTargetLocation  extends PlatformObject implements IBndWorkspaceTargetLocation{
 
 	private Workspace workspace ;
-	private File workspaceDir = null;
+	private IPath workspaceDir = null;
 
 	public BndWorkspaceTargetLocation() throws CoreException {
 		this(getDefaultWorkppaceDir());
 	}
-	public BndWorkspaceTargetLocation(File workspaceDir) throws CoreException {
+	public BndWorkspaceTargetLocation(IPath workspaceDir) throws CoreException {
 		if(workspaceDir == null)
 			this.workspaceDir = getDefaultWorkppaceDir();
 		else
@@ -51,7 +52,7 @@ public class BndWorkspaceTargetLocation  extends PlatformObject implements IBndW
 		if (workspace != null)
 			return workspace;
 
-		workspace = Workspace.getWorkspace(workspaceDir);
+		workspace = Workspace.getWorkspace(workspaceDir.toFile());
 
 		// Initialize projects in synchronized block
 		workspace.getBuildOrder();
@@ -60,24 +61,23 @@ public class BndWorkspaceTargetLocation  extends PlatformObject implements IBndW
 		return workspace;
 	}
 
-	private static File getDefaultWorkppaceDir() throws CoreException {
+	private static IPath getDefaultWorkppaceDir() throws CoreException {
 		IWorkspace eclipseWorkspace = ResourcesPlugin.getWorkspace();
 		IProject cnfProject = eclipseWorkspace.getRoot().getProject("bnd");
 
 		if (!cnfProject.exists())
 			cnfProject = eclipseWorkspace.getRoot().getProject("cnf");
 		
-		File workspaceDir;
+		IPath workspaceDir;
 		if (cnfProject.exists()) {
 			if (!cnfProject.isOpen())
 				cnfProject.open(null);
-			File cnfDir = cnfProject.getLocation().toFile();
-			workspaceDir = cnfDir.getParentFile();
+			IPath cnfDir = cnfProject.getLocation();
+			workspaceDir = cnfDir.removeLastSegments(1);
 		} else {
 			// Have to assume that the eclipse workspace == the bnd workspace,
 			// and cnf hasn't been imported yet.
-			workspaceDir = eclipseWorkspace.getRoot().getLocation()
-					.toFile();
+			workspaceDir = eclipseWorkspace.getRoot().getLocation();
 		}
 		return workspaceDir;
 	}
@@ -178,10 +178,10 @@ public class BndWorkspaceTargetLocation  extends PlatformObject implements IBndW
 		return null;
 	}
 	@Override
-	public File getWorkspaceDir() {
+	public IPath getWorkspaceDir() {
 		return workspaceDir;
 	}
-	public void setWorkspaceDir(File workspaceDir) {
+	public void setWorkspaceDir(IPath workspaceDir) {
 	}
 	public void setDownloadAll(boolean downloadAll) {
 	}
@@ -195,6 +195,14 @@ public class BndWorkspaceTargetLocation  extends PlatformObject implements IBndW
 	}
 	@Override
 	public IStatus update() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	public IStatus validate() {
+		return null;
+	}
+	@Override
+	public IStatus validate(IPath workspaceDir1) {
 		// TODO Auto-generated method stub
 		return null;
 	}

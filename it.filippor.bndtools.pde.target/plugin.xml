@@ -17,7 +17,7 @@
          point="org.eclipse.pde.ui.targetLocationProvisioners">
       <locationProvider
             class="it.filippor.bndtools.pde.target.location.ui.BndWorkspaceTargetLocationWizard"
-            icon="src/main/resources/bndtools-logo-16x16.png"
+            icon="images/bndtools-logo-16x16.png"
             id="it.filippor.bndtools.pde.target.locationProvider"
             name="BndtoolsWorkspace">
          <description>
@@ -33,6 +33,12 @@
              class="it.filippor.bndtools.pde.target.location.ui.AdapterFactory">
           <adapter
                 type="org.eclipse.jface.viewers.ILabelProvider">
+          </adapter>
+          <adapter
+                type="org.eclipse.pde.ui.target.ITargetLocationEditor">
+          </adapter>
+          <adapter
+                type="org.eclipse.pde.ui.target.ITargetLocationUpdater">
           </adapter>
        </factory>
     </extension>

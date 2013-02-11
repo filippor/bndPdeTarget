@@ -14,14 +14,12 @@ public class BndWorkspaceTargetLocationUpdater implements
 	@Override
 	public boolean canUpdate(ITargetDefinition target,
 			ITargetLocation targetLocation) {
-		// TODO Auto-generated method stub
 		return targetLocation instanceof IBndWorkspaceTargetLocation;
 	}
 
 	@Override
 	public IStatus update(ITargetDefinition target,
 			ITargetLocation targetLocation, IProgressMonitor monitor) {
-		// TODO Auto-generated method stub
 		return ((IBndWorkspaceTargetLocation)targetLocation).update();
 	}
 

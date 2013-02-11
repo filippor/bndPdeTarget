@@ -24,7 +24,7 @@ public class Activator extends AbstractUIPlugin {
 	// The plug-in ID
 	public static final String PLUGIN_ID = "it.filippor.bndtools.pde.target"; //$NON-NLS-1$
 
-	public static final String BNDTOOLS_LOGO_IMAGE_ID = "src/main/resources/bndtools-logo-16x16.png";
+	public static final String BNDTOOLS_LOGO_IMAGE_ID = "images/bndtools-logo-16x16.png";
 
 	// The shared instance
 	private static Activator plugin;
@@ -132,7 +132,7 @@ public class Activator extends AbstractUIPlugin {
 
 	        ImageDescriptor myImage = ImageDescriptor.createFromURL(
 	              FileLocator.find(bundle,
-	                               new Path("src/main/resources/bndtools-logo-16x16.png"),
+	                               new Path("images/bndtools-logo-16x16.png"),
 	                                        null));
 	        registry.put(BNDTOOLS_LOGO_IMAGE_ID, myImage);
 	    }

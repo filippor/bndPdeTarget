@@ -2,7 +2,10 @@ package it.filippor.bndtools.pde.target.location;
 
 import it.filippor.bndtools.pde.target.Activator;
 
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeSupport;
 import java.io.File;
+import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -12,28 +15,28 @@ import java.util.SortedSet;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.IWorkspace;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubProgressMonitor;
 import org.eclipse.pde.core.target.ITargetDefinition;
 import org.eclipse.pde.core.target.TargetBundle;
 import org.eclipse.pde.core.target.TargetFeature;
 import org.eclipse.pde.internal.core.target.AbstractBundleContainer;
-import org.eclipse.pde.internal.ui.correction.UpdateActivationResolution;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
 import aQute.bnd.build.DownloadBlocker;
@@ -54,6 +57,29 @@ public class BndWorkspaceTargetLocationTmp extends AbstractBundleContainer
 
 	private boolean importCnf = true;
 	private boolean downloadAll = false;
+
+	
+	@Override
+	public IStatus validate() {
+		return validate(workspaceDir);
+	}
+	@Override
+	public IStatus validate(IPath workspaceDir) {
+		try {
+			if(Workspace.getWorkspace(workspaceDir.toFile())!=null)
+				return Status.OK_STATUS;
+			IStatus status = new Status(IStatus.ERROR, Activator.PLUGIN_ID,
+					"path is not valid bnd workspace");
+			return status;
+		} catch (Exception e) {
+			IStatus status = new Status(IStatus.ERROR, Activator.PLUGIN_ID,
+					IStatus.OK, e.getMessage(), e);
+			;
+//			Activator.log(status);
+			return status;
+		}
+	}
+
 	@Override
 	public boolean isImportCnf() {
 		return importCnf;
@@ -61,6 +87,8 @@ public class BndWorkspaceTargetLocationTmp extends AbstractBundleContainer
 
 	@Override
 	public void setImportCnf(boolean importCnf) {
+		changeSupport.firePropertyChange("importCnf", this.importCnf,
+				importCnf);
 		this.importCnf = importCnf;
 		update();
 	}
@@ -78,40 +106,35 @@ public class BndWorkspaceTargetLocationTmp extends AbstractBundleContainer
 
 	@Override
 	public void setDownloadAll(boolean downloadAll) {
+		changeSupport.firePropertyChange("downloadAll",
+				this.downloadAll, downloadAll);
 		this.downloadAll = downloadAll;
 		update();
 	}
 
 	@Override
-	public void setWorkspaceDir(File workspaceDir) {
+	public void setWorkspaceDir(IPath workspaceDir) {
+		changeSupport.firePropertyChange("workspaceDir",
+				this.workspaceDir, workspaceDir);
 		this.workspaceDir = workspaceDir;
 		update();
 	}
 
-	private Workspace workspace;
-	private File workspaceDir = null;
+	private IPath workspaceDir = null;
 
-	public BndWorkspaceTargetLocationTmp() throws CoreException {
-		this(getDefaultWorkspaceDir());
-	}
+	
 
-	public BndWorkspaceTargetLocationTmp(File workspaceDir)
-			throws CoreException {
-		if (workspaceDir == null)
-			this.workspaceDir = getDefaultWorkspaceDir();
-		else
-			this.workspaceDir = workspaceDir;
+	public BndWorkspaceTargetLocationTmp(IPath workspaceDir) {
+		this.workspaceDir = workspaceDir;
 	}
 
 	public BndWorkspaceTargetLocationTmp(String serializedXML)
 			throws CoreException {
-		if (serializedXML == null) {
-			this.workspaceDir = getDefaultWorkspaceDir();
-			return;
-		}
+		
 		DocumentBuilder parser;
-		try {
-			parser = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+		
+			try {
+				parser = DocumentBuilderFactory.newInstance().newDocumentBuilder();
 			parser.setErrorHandler(new DefaultHandler());
 			Document doc = parser.parse(new InputSource(new StringReader(
 					serializedXML)));
@@ -122,68 +145,30 @@ public class BndWorkspaceTargetLocationTmp extends AbstractBundleContainer
 						"error read target from xml"));
 			}
 			String nodeValue = root.getAttribute("workspaceDir");
-			try {
-				File f = new File(nodeValue);
-				if (f.exists()) {
+				IPath f = Path.fromPortableString(nodeValue);
+				if (f.toFile().exists()) {
 					this.workspaceDir = f;
 					return;
 				}
-			} catch (Exception e) {
 
+			} catch (ParserConfigurationException | SAXException | IOException e) {
+				throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, "error in parse target location XML",e));
 			}
+		
 
-		} catch (Exception e) {
-			if (e instanceof CoreException)
-				throw (CoreException) e;
-			Activator.log(e);
-		}
-
-		try {
-			File f = new File(serializedXML);
-			if (f.exists()) {
-				this.workspaceDir = f;
-				return;
-			}
-
-		} catch (Exception e) {
-
-		}
-
-		Activator.logErrorMessage("use default");
-		this.workspaceDir = getDefaultWorkspaceDir();
+		
+		
 	}
 
-	private Workspace getWorkspace() throws Exception {
-		if (workspace != null)
-			return workspace;
+	private Workspace getWorkspace(IPath workspaceDir) throws Exception {
+		
 
-		workspace = Workspace.getWorkspace(workspaceDir);
+		Workspace workspace = Workspace.getWorkspace(workspaceDir.toFile());
 
 		// Initialize projects in synchronized block
 		workspace.getBuildOrder();
 
 		return workspace;
-	}
-
-	private static File getDefaultWorkspaceDir() throws CoreException {
-		IWorkspace eclipseWorkspace = ResourcesPlugin.getWorkspace();
-		IProject cnfProject = eclipseWorkspace.getRoot().getProject("bnd");
-
-		if (!cnfProject.exists())
-			cnfProject = eclipseWorkspace.getRoot().getProject("cnf");
-
-		File workspaceDir;
-		if (cnfProject.exists()) {
-			if (!cnfProject.isOpen())
-				cnfProject.open(null);
-			File cnfDir = cnfProject.getLocation().toFile();
-			workspaceDir = cnfDir.getParentFile();
-		} else {
-			// Have to assume that the eclipse workspace == the bnd workspace,
-			// and cnf hasn't been imported yet.
-			workspaceDir = eclipseWorkspace.getRoot().getLocation().toFile();
-		}
-		return workspaceDir;
 	}
 
 	@Override
@@ -212,7 +197,8 @@ public class BndWorkspaceTargetLocationTmp extends AbstractBundleContainer
 
 		containerElement = document.createElement("location");
 		containerElement.setAttribute("type", getType());
-		containerElement.setAttribute("workspaceDir", workspaceDir.getPath());
+		containerElement.setAttribute("workspaceDir",
+				workspaceDir.toPortableString());
 		document.appendChild(containerElement);
 
 		try {
@@ -273,12 +259,14 @@ public class BndWorkspaceTargetLocationTmp extends AbstractBundleContainer
 
 		try {
 			monitor.beginTask("resolve bundle", 2);
-			Collection<Project> allProjects = getWorkspace().getAllProjects();
+			Collection<Project> allProjects = getWorkspace(workspaceDir).getAllProjects();
 			final List<TargetBundle> bundles = new ArrayList<>(
 					allProjects.size());
-			IProgressMonitor projectM = new SubProgressMonitor(monitor,allProjects.size());
+			IProgressMonitor projectM = new SubProgressMonitor(monitor,
+					allProjects.size());
 			for (Project project : allProjects) {
-				if(monitor.isCanceled() )return null;
+				if (monitor.isCanceled())
+					return null;
 				projectM.subTask("process project " + project.getName());
 				for (File file : project.getBuildFiles(true)) {
 					bundles.add(new TargetBundle(file));
@@ -288,47 +276,56 @@ public class BndWorkspaceTargetLocationTmp extends AbstractBundleContainer
 			projectM.done();
 			IProgressMonitor cnfM = new SubProgressMonitor(monitor, 1);
 			if (importCnf) {
-				List<RepositoryPlugin> repositories = getWorkspace()
+				List<RepositoryPlugin> repositories = getWorkspace(workspaceDir)
 						.getRepositories();
-				IProgressMonitor repositoriesM = new SubProgressMonitor(cnfM,repositories.size());
+				IProgressMonitor repositoriesM = new SubProgressMonitor(cnfM,
+						repositories.size());
 				for (RepositoryPlugin repositoryPlugin : repositories) {
-					if(monitor.isCanceled() )return null;
+					if (monitor.isCanceled())
+						return null;
 					repositoriesM.subTask("process " + repositoryPlugin);
 					List<String> list = repositoryPlugin.list(null);
-					IProgressMonitor listM = new SubProgressMonitor(repositoriesM, list.size());
+					IProgressMonitor listM = new SubProgressMonitor(
+							repositoriesM, list.size());
 					for (String string : list) {
 						listM.subTask("process" + string);
-						if(monitor.isCanceled() )return null;
+						if (monitor.isCanceled())
+							return null;
 						SortedSet<Version> versions = repositoryPlugin
 								.versions(string);
 						for (Version version : versions) {
-							if(monitor.isCanceled() )return null;
-							Reporter reporter = new Processor(){
+							if (monitor.isCanceled())
+								return null;
+							Reporter reporter = new Processor() {
 
-							@Override
-							public void trace(String msg, Object... parms) {
-								try {
-									bundles.add(new TargetBundle((File) parms[0]));
-								} catch (CoreException e) {
-									Activator.logException(e);
+								@Override
+								public void trace(String msg, Object... parms) {
+									try {
+										bundles.add(new TargetBundle(
+												(File) parms[0]));
+									} catch (CoreException e) {
+										Activator.logException(e);
+									}
 								}
-							}
-								
+
 							};
-							DownloadBlocker dwnListener = new DownloadBlocker(reporter) {
+							DownloadBlocker dwnListener = new DownloadBlocker(
+									reporter) {
 
 								@Override
 								public boolean progress(File file,
 										int percentage) throws Exception {
-									if(!downloadAll)return false;
-									if(monitor.isCanceled())return false;
+									if (!downloadAll)
+										return false;
+									if (monitor.isCanceled())
+										return false;
 									return super.progress(file, percentage);
 								}
 
 							};
 							repositoryPlugin.get(string, version, null,
 									dwnListener);
-							if(downloadAll)
+							if (downloadAll)
 								dwnListener.getReason();
 						}
 						listM.worked(1);
@@ -363,7 +360,33 @@ public class BndWorkspaceTargetLocationTmp extends AbstractBundleContainer
 	 * getWorkspaceDir()
 	 */
 	@Override
-	public File getWorkspaceDir() {
+	public IPath getWorkspaceDir() {
 		return workspaceDir;
+	}
+
+	private PropertyChangeSupport changeSupport = new PropertyChangeSupport(
+			this);
+
+	public void addPropertyChangeListener(PropertyChangeListener listener) {
+		changeSupport.addPropertyChangeListener(listener);
+	}
+
+	public void removePropertyChangeListener(PropertyChangeListener listener) {
+		changeSupport.removePropertyChangeListener(listener);
+	}
+
+	public void addPropertyChangeListener(String propertyName,
+			PropertyChangeListener listener) {
+		changeSupport.addPropertyChangeListener(propertyName, listener);
+	}
+
+	public void removePropertyChangeListener(String propertyName,
+			PropertyChangeListener listener) {
+		changeSupport.removePropertyChangeListener(propertyName, listener);
+	}
+
+	protected void firePropertyChange(String propertyName, Object oldValue,
+			Object newValue) {
+		changeSupport.firePropertyChange(propertyName, oldValue, newValue);
 	}
 }
