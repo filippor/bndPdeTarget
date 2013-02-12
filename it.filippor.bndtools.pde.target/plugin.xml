@@ -13,6 +13,17 @@
 		  </targetLocation>
    </extension>
    
+   <extension
+         id="it.filippor.bndtools.pde.target.buildListener"
+         name="bndtools Target"
+         point="bndtools.core.buildListeners">
+      <listener
+            class="it.filippor.bndtools.pde.target.listener.BndBuildListener"
+            name="update TargetLocation">
+      </listener>
+         
+   </extension>
+   
     <extension
          point="org.eclipse.pde.ui.targetLocationProvisioners">
       <locationProvider

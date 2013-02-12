@@ -207,4 +207,9 @@ public class BndWorkspaceTargetLocation  extends PlatformObject implements IBndW
 	public boolean isUseEclipseWorkspace() {
 		return false;
 	}
+	public void setTargetDefinition(ITargetDefinition targetDefinition) {
+	}
+	public ITargetDefinition getTargetDefinition() {
+		return null;
+	}
 }

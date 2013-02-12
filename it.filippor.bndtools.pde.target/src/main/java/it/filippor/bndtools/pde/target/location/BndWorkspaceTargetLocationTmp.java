@@ -1,6 +1,7 @@
 package it.filippor.bndtools.pde.target.location;
 
 import it.filippor.bndtools.pde.target.Activator;
+import it.filippor.bndtools.pde.target.listener.BndBuildListener;
 
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
@@ -93,6 +94,7 @@ public class BndWorkspaceTargetLocationTmp extends AbstractBundleContainer
 
 		this.useEclipseWorkspace = useEclipseWorkspace;
 		if (useEclipseWorkspace) {
+			
 			if (inPropertyChange.compareAndSet(false, true)) {
 				try {
 					setWorkspaceDir(BndWorkspaceTargetLocationFactory
@@ -123,10 +125,14 @@ public class BndWorkspaceTargetLocationTmp extends AbstractBundleContainer
 
 	@Override
 	public IStatus update() {
-		super.clearResolutionStatus();
+		clearResolutionStatus();
 		return Status.OK_STATUS;
 	}
-
+	@Override
+	protected void clearResolutionStatus() {
+		BndBuildListener.removeListener(this);
+		super.clearResolutionStatus();
+	}
 	@Override
 	public boolean isDownloadAll() {
 		return downloadAll;
@@ -142,9 +148,13 @@ public class BndWorkspaceTargetLocationTmp extends AbstractBundleContainer
 	}
 
 	private IPath workspaceDir = null;
+	private ITargetDefinition targetDefinition;
 
-	public BndWorkspaceTargetLocationTmp(IPath workspaceDir) {
-		this.workspaceDir = workspaceDir;
+	public BndWorkspaceTargetLocationTmp() {
+		this.workspaceDir = BndWorkspaceTargetLocationFactory.getDefaultWorkspaceDir();
+		useEclipseWorkspace = true;
+		importCnf = true;          
+		downloadAll = false;       
 	}
 
 	public BndWorkspaceTargetLocationTmp(String serializedXML)
@@ -288,7 +298,9 @@ public class BndWorkspaceTargetLocationTmp extends AbstractBundleContainer
 	@Override
 	protected TargetBundle[] resolveBundles(ITargetDefinition definition,
 			final IProgressMonitor monitor) throws CoreException {
-
+		this.setTargetDefinition(definition);
+		if(useEclipseWorkspace)
+			BndBuildListener.addListener(this);
 		try {
 			monitor.beginTask("resolve bundle", 2);
 			Collection<Project> allProjects = getWorkspace(workspaceDir)
@@ -421,5 +433,15 @@ public class BndWorkspaceTargetLocationTmp extends AbstractBundleContainer
 	public void firePropertyChange(String propertyName, Object oldValue,
 			Object newValue) {
 		changeSupport.firePropertyChange(propertyName, oldValue, newValue);
+	}
+
+	@Override
+	public ITargetDefinition getTargetDefinition() {
+		return targetDefinition;
+	}
+
+	@Override
+	public void setTargetDefinition(ITargetDefinition targetDefinition) {
+		this.targetDefinition = targetDefinition;
 	}
 }

@@ -2,6 +2,7 @@ package it.filippor.bndtools.pde.target.location;
 
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.pde.core.target.ITargetDefinition;
 import org.eclipse.pde.core.target.ITargetLocation;
 
 public interface IBndWorkspaceTargetLocation extends ITargetLocation{
@@ -26,6 +27,10 @@ public interface IBndWorkspaceTargetLocation extends ITargetLocation{
 	public abstract void setUseEclipseWorkspace(boolean useEclipseWorkspace);
 
 	public abstract boolean isUseEclipseWorkspace();
+
+	public abstract void setTargetDefinition(ITargetDefinition targetDefinition);
+
+	public abstract ITargetDefinition getTargetDefinition();
 	
 
 }

@@ -53,7 +53,7 @@ public class BndWorkspaceTargetLocationFactory implements ITargetLocationFactory
 	}
 
 	public static IBndWorkspaceTargetLocation getInstance()  {
-		return new BndWorkspaceTargetLocationTmp(getDefaultWorkspaceDir());
+		return new BndWorkspaceTargetLocationTmp();
 	}
 	
 	public static IStatus validate(IPath workspaceDir) {
