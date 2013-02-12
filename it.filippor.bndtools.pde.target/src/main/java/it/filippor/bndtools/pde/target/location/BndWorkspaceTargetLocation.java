@@ -201,9 +201,10 @@ public class BndWorkspaceTargetLocation  extends PlatformObject implements IBndW
 	public IStatus validate() {
 		return null;
 	}
-	@Override
-	public IStatus validate(IPath workspaceDir1) {
-		// TODO Auto-generated method stub
-		return null;
+	
+	public void setUseEclipseWorkspace(boolean useEclipseWorkspace) {
+	}
+	public boolean isUseEclipseWorkspace() {
+		return false;
 	}
 }

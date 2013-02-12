@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.SortedSet;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -57,28 +58,12 @@ public class BndWorkspaceTargetLocationTmp extends AbstractBundleContainer
 		implements IBndWorkspaceTargetLocation {// implements
 
 	private boolean importCnf = true;
+	private boolean useEclipseWorkspace = true;
 	private boolean downloadAll = false;
 
-	
 	@Override
 	public IStatus validate() {
-		return validate(workspaceDir);
-	}
-	@Override
-	public IStatus validate(IPath workspaceDir) {
-		try {
-			if(Workspace.getWorkspace(workspaceDir.toFile())!=null)
-				return Status.OK_STATUS;
-			IStatus status = new Status(IStatus.ERROR, Activator.PLUGIN_ID,
-					"path is not valid bnd workspace");
-			return status;
-		} catch (Exception e) {
-			IStatus status = new Status(IStatus.ERROR, Activator.PLUGIN_ID,
-					IStatus.OK, e.getMessage(), e);
-			;
-//			Activator.log(status);
-			return status;
-		}
+		return BndWorkspaceTargetLocationFactory.validate(workspaceDir);
 	}
 
 	@Override
@@ -88,9 +73,51 @@ public class BndWorkspaceTargetLocationTmp extends AbstractBundleContainer
 
 	@Override
 	public void setImportCnf(boolean importCnf) {
-		changeSupport.firePropertyChange("importCnf", this.importCnf,
-				importCnf);
+		changeSupport
+				.firePropertyChange("importCnf", this.importCnf, importCnf);
 		this.importCnf = importCnf;
+		update();
+	}
+
+	@Override
+	public boolean isUseEclipseWorkspace() {
+		return useEclipseWorkspace;
+	}
+
+	private AtomicBoolean inPropertyChange = new AtomicBoolean(false);
+
+	public void setUseEclipseWorkspace(boolean useEclipseWorkspace) {
+
+		changeSupport.firePropertyChange("useEclipseWorkspace",
+				this.useEclipseWorkspace, useEclipseWorkspace);
+
+		this.useEclipseWorkspace = useEclipseWorkspace;
+		if (useEclipseWorkspace) {
+			if (inPropertyChange.compareAndSet(false, true)) {
+				try {
+					setWorkspaceDir(BndWorkspaceTargetLocationFactory
+							.getDefaultWorkspaceDir());
+				} finally {
+					inPropertyChange.set(false);
+				}
+			}
+		}
+		update();
+	}
+
+	@Override
+	public void setWorkspaceDir(IPath workspaceDir) {
+		changeSupport.firePropertyChange("workspaceDir", this.workspaceDir,
+				workspaceDir);
+		this.workspaceDir = workspaceDir;
+		if (inPropertyChange.compareAndSet(false, true)) {
+			try {
+				setUseEclipseWorkspace(false);
+			} finally {
+				inPropertyChange.set(false);
+			}
+		}
+
 		update();
 	}
 
@@ -107,23 +134,14 @@ public class BndWorkspaceTargetLocationTmp extends AbstractBundleContainer
 
 	@Override
 	public void setDownloadAll(boolean downloadAll) {
-		changeSupport.firePropertyChange("downloadAll",
-				this.downloadAll, downloadAll);
+		changeSupport.firePropertyChange("downloadAll", this.downloadAll,
+				downloadAll);
+
 		this.downloadAll = downloadAll;
 		update();
 	}
 
-	@Override
-	public void setWorkspaceDir(IPath workspaceDir) {
-		changeSupport.firePropertyChange("workspaceDir",
-				this.workspaceDir, workspaceDir);
-		this.workspaceDir = workspaceDir;
-		update();
-	}
-
 	private IPath workspaceDir = null;
-
-	
 
 	public BndWorkspaceTargetLocationTmp(IPath workspaceDir) {
 		this.workspaceDir = workspaceDir;
@@ -131,11 +149,11 @@ public class BndWorkspaceTargetLocationTmp extends AbstractBundleContainer
 
 	public BndWorkspaceTargetLocationTmp(String serializedXML)
 			throws CoreException {
-		
+
 		DocumentBuilder parser;
-		
-			try {
-				parser = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+
+		try {
+			parser = DocumentBuilderFactory.newInstance().newDocumentBuilder();
 			parser.setErrorHandler(new DefaultHandler());
 			Document doc = parser.parse(new InputSource(new StringReader(
 					serializedXML)));
@@ -145,42 +163,28 @@ public class BndWorkspaceTargetLocationTmp extends AbstractBundleContainer
 				throw new CoreException(new Status(0, Activator.PLUGIN_ID,
 						"error read target from xml"));
 			}
-			String nodeValue = root.getAttribute("workspaceDir");
+			this.useEclipseWorkspace = Boolean.valueOf(root
+					.getAttribute("useEclipseWorkspace"));
+			if (this.useEclipseWorkspace) {
+				this.workspaceDir = BndWorkspaceTargetLocationFactory
+						.getDefaultWorkspaceDir();
+			} else {
+				String nodeValue = root.getAttribute("workspaceDir");
 				IPath f = Path.fromPortableString(nodeValue);
 				if (f.toFile().exists()) {
 					this.workspaceDir = f;
-					return;
 				}
-
-			} catch (ParserConfigurationException | SAXException | IOException e) {
-				throw new CoreException(new Status(IStatus.ERROR, Activator.PLUGIN_ID, "error in parse target location XML",e));
 			}
-		
+			this.importCnf = Boolean.valueOf(root.getAttribute("importCnf"));
+			this.downloadAll = Boolean
+					.valueOf(root.getAttribute("downloadAll"));
 
-		
-		
-	}
+		} catch (ParserConfigurationException | SAXException | IOException e) {
+			throw new CoreException(new Status(IStatus.ERROR,
+					Activator.PLUGIN_ID, "error in parse target location XML",
+					e));
+		}
 
-	private Workspace getWorkspace(IPath workspaceDir) throws Exception {
-		
-
-		Workspace workspace = Workspace.getWorkspace(workspaceDir.toFile());
-
-		// Initialize projects in synchronized block
-		workspace.getBuildOrder();
-
-		return workspace;
-	}
-
-	@Override
-	public String getType() {
-		return TYPE;
-	}
-
-	@Override
-	public String getLocation(boolean resolve) throws CoreException {
-		// TODO Auto-generated method stub
-		return null;
 	}
 
 	@Override
@@ -198,8 +202,14 @@ public class BndWorkspaceTargetLocationTmp extends AbstractBundleContainer
 
 		containerElement = document.createElement("location");
 		containerElement.setAttribute("type", getType());
-		containerElement.setAttribute("workspaceDir",
-				workspaceDir.toPortableString());
+		containerElement.setAttribute("useEclipseWorkspace", ""
+				+ this.useEclipseWorkspace);
+		if (!useEclipseWorkspace) {
+			containerElement.setAttribute("workspaceDir",
+					workspaceDir.toPortableString());
+		}
+		containerElement.setAttribute("importCnf", "" + this.importCnf);
+		containerElement.setAttribute("downloadAll", "" + this.downloadAll);
 		document.appendChild(containerElement);
 
 		try {
@@ -214,6 +224,27 @@ public class BndWorkspaceTargetLocationTmp extends AbstractBundleContainer
 			Activator.log(e);
 
 		}
+		return null;
+	}
+
+	private Workspace getWorkspace(IPath workspaceDir) throws Exception {
+
+		Workspace workspace = Workspace.getWorkspace(workspaceDir.toFile());
+
+		// Initialize projects in synchronized block
+		workspace.getBuildOrder();
+
+		return workspace;
+	}
+
+	@Override
+	public String getType() {
+		return TYPE;
+	}
+
+	@Override
+	public String getLocation(boolean resolve) throws CoreException {
+		// TODO Auto-generated method stub
 		return null;
 	}
 
@@ -260,7 +291,8 @@ public class BndWorkspaceTargetLocationTmp extends AbstractBundleContainer
 
 		try {
 			monitor.beginTask("resolve bundle", 2);
-			Collection<Project> allProjects = getWorkspace(workspaceDir).getAllProjects();
+			Collection<Project> allProjects = getWorkspace(workspaceDir)
+					.getAllProjects();
 			final List<TargetBundle> bundles = new ArrayList<>(
 					allProjects.size());
 			IProgressMonitor projectM = new SubProgressMonitor(monitor,
@@ -386,7 +418,7 @@ public class BndWorkspaceTargetLocationTmp extends AbstractBundleContainer
 		changeSupport.removePropertyChangeListener(propertyName, listener);
 	}
 
-	protected void firePropertyChange(String propertyName, Object oldValue,
+	public void firePropertyChange(String propertyName, Object oldValue,
 			Object newValue) {
 		changeSupport.firePropertyChange(propertyName, oldValue, newValue);
 	}

@@ -23,6 +23,9 @@ public interface IBndWorkspaceTargetLocation extends ITargetLocation{
 
 	public abstract IStatus validate();
 
-	IStatus validate(IPath workspaceDir1);
+	public abstract void setUseEclipseWorkspace(boolean useEclipseWorkspace);
+
+	public abstract boolean isUseEclipseWorkspace();
+	
 
 }

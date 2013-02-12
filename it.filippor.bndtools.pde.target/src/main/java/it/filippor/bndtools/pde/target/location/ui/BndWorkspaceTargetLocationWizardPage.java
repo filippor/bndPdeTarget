@@ -4,7 +4,6 @@ import it.filippor.bndtools.pde.target.Activator;
 import it.filippor.bndtools.pde.target.location.BndWorkspaceTargetLocationFactory;
 import it.filippor.bndtools.pde.target.location.IBndWorkspaceTargetLocation;
 import it.filippor.eclipse.databinding.util.ControlDecorationAndDialogUpdater;
-import it.filippor.eclipse.databinding.util.IPathStringValidator;
 import it.filippor.eclipse.databinding.util.IPathToStringConverter;
 import it.filippor.eclipse.databinding.util.NegateBooleanConverter;
 import it.filippor.eclipse.databinding.util.StringToIPathConverter;
@@ -13,14 +12,15 @@ import org.eclipse.core.databinding.Binding;
 import org.eclipse.core.databinding.DataBindingContext;
 import org.eclipse.core.databinding.UpdateValueStrategy;
 import org.eclipse.core.databinding.beans.PojoProperties;
-import org.eclipse.core.databinding.conversion.IConverter;
 import org.eclipse.core.databinding.observable.value.IObservableValue;
 import org.eclipse.core.databinding.validation.IValidator;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.databinding.fieldassist.ControlDecorationSupport;
 import org.eclipse.jface.databinding.swt.WidgetProperties;
+import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.wizard.WizardPage;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -34,7 +34,17 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 
 public class BndWorkspaceTargetLocationWizardPage extends WizardPage {
+	private Binding bndDefaultLoc;
 
+	public final static class BNDLocationValidator implements IValidator {
+		public IStatus validate(Object value) {
+			if (value instanceof IPath) {
+				IStatus status = BndWorkspaceTargetLocationFactory.validate((IPath) value);
+				return status;
+			}
+			return new Status(ERROR, Activator.PLUGIN_ID, "invalid Type");
+		}
+	}
 	private IBndWorkspaceTargetLocation targetLocation;
 
 	public BndWorkspaceTargetLocationWizardPage(
@@ -56,8 +66,7 @@ public class BndWorkspaceTargetLocationWizardPage extends WizardPage {
 	private Button btnBrowse;
 	private Button btnDownloadBundles;
 	private Button btnIncludeConfigurationBundles;
-	private Binding binding;
-	private Binding binding1;
+	private Binding bndPath;
 
 	private ControlDecorationAndDialogUpdater updater;
 
@@ -75,21 +84,15 @@ public class BndWorkspaceTargetLocationWizardPage extends WizardPage {
 
 		btnUseDefaultLocation = new Button(composite, SWT.CHECK);
 		btnUseDefaultLocation.setSelection(isNew);
-		btnUseDefaultLocation.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				if (btnUseDefaultLocation.getSelection()) {
-					IPath defaultWorkspaceDir = BndWorkspaceTargetLocationFactory
-							.getDefaultWorkspaceDir();
-					txtPath.setText(defaultWorkspaceDir.toPortableString());
-					binding.updateTargetToModel();
-				}
-			}
-		});
-
 		btnUseDefaultLocation.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER,
 				false, false, 3, 1));
 		btnUseDefaultLocation.setText("Use Default Location");
+		btnUseDefaultLocation.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				bndPath.updateModelToTarget();
+			}
+		});
 
 		Label lblLocation = new Label(composite, SWT.NONE);
 		lblLocation.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false,
@@ -108,9 +111,16 @@ public class BndWorkspaceTargetLocationWizardPage extends WizardPage {
 				DirectoryDialog dd = new DirectoryDialog(getShell(), SWT.OPEN);
 				dd.setFilterPath(txtPath.getText());
 				String path = dd.open();
-				if (path != null)
-					txtPath.setText(path);
-				binding.updateTargetToModel();
+				if (path != null) {
+					IStatus status = BndWorkspaceTargetLocationFactory.validate(Path.fromOSString(path));
+					if(status.isOK()){
+						txtPath.setText(path);
+						bndPath.updateTargetToModel();
+						bndDefaultLoc.updateModelToTarget();
+					}else {
+						new ErrorDialog(getShell(), "Invalid directory", status.getMessage(), status,IStatus.ERROR).open();
+					}
+				}
 			}
 		});
 		btnBrowse.setText("Browse");
@@ -128,96 +138,51 @@ public class BndWorkspaceTargetLocationWizardPage extends WizardPage {
 		setPageComplete(true);
 		initDataBindings();
 		updater = new ControlDecorationAndDialogUpdater(this);
-		ControlDecorationSupport.create(binding, SWT.LEAD | SWT.TOP, parent,
+		ControlDecorationSupport.create(bndPath, SWT.LEAD | SWT.TOP, parent,
 				updater);
-		ControlDecorationSupport.create(binding1, SWT.LEAD | SWT.TOP, parent,
-				updater);
+		if(targetLocation.isUseEclipseWorkspace()) {
+			txtPath.setEnabled(false);
+//			btnBrowse.setEnabled(false);
+		}
 
 	}
-
 	protected DataBindingContext initDataBindings() {
 		DataBindingContext bindingContext = new DataBindingContext();
 		//
-		IObservableValue observeSelectionBtnIncludeConfigurationBundlesObserveWidget_1 = WidgetProperties
-				.selection().observe(btnIncludeConfigurationBundles);
-		IObservableValue importCnfGetTargetLocationObserveValue = PojoProperties
-				.value("importCnf").observe(getTargetLocation());
-		bindingContext.bindValue(
-				observeSelectionBtnIncludeConfigurationBundlesObserveWidget_1,
-				importCnfGetTargetLocationObserveValue, null, null);
+		IObservableValue observeTextTxtPathObserveWidget1 = WidgetProperties.text(SWT.Modify).observe(txtPath);
+		IObservableValue workspaceDirGetTargetLocationObserveValue = PojoProperties.value("workspaceDir").observe(targetLocation);
+		UpdateValueStrategy targetToModel1 = new UpdateValueStrategy();
+		targetToModel1.setConverter(new StringToIPathConverter());
+		IValidator targetPathValidator = new BNDLocationValidator();
+		targetToModel1.setAfterConvertValidator(targetPathValidator);
+		UpdateValueStrategy modelToTarget1 = new UpdateValueStrategy();
+		modelToTarget1.setConverter(new IPathToStringConverter());
+		IValidator targetPathValidator1 = new BNDLocationValidator();
+		modelToTarget1.setAfterGetValidator(targetPathValidator1);
+		bndPath = bindingContext.bindValue(observeTextTxtPathObserveWidget1, workspaceDirGetTargetLocationObserveValue, targetToModel1, modelToTarget1);
 		//
-		IObservableValue observeTextTxtPathObserveWidget = WidgetProperties
-				.text().observe(txtPath);
-		IObservableValue workspaceDirGetTargetLocationObserveValue = PojoProperties
-				.value("workspaceDir").observe(getTargetLocation());
-		UpdateValueStrategy strategy = new UpdateValueStrategy();
-		strategy.setConverter(new StringToIPathConverter());
-		strategy.setAfterGetValidator(new IPathStringValidator());
-		IValidator targetPathValidator = new IValidator() {
-
-			public IStatus validate(Object value) {
-				if (value instanceof IPath) {
-					IStatus status = targetLocation.validate((IPath) value);
-					return status;
-				}
-				return new Status(ERROR, Activator.PLUGIN_ID, "invalid Type");
-			}
-		};
-		strategy.setAfterConvertValidator(targetPathValidator);
-		UpdateValueStrategy strategy_1 = new UpdateValueStrategy();
-		strategy_1.setConverter(new IPathToStringConverter());
-		binding = bindingContext
-				.bindValue(observeTextTxtPathObserveWidget,
-						workspaceDirGetTargetLocationObserveValue, strategy,
-						strategy_1);
+		IObservableValue observeSelectionBtnUseDefaultLocationBundlesObserveWidget = WidgetProperties.selection().observe(btnUseDefaultLocation);
+		IObservableValue useEclipseWorkspaceTargetLocationObserveValue = PojoProperties.value("useEclipseWorkspace").observe(targetLocation);
+		bndDefaultLoc = bindingContext.bindValue(observeSelectionBtnUseDefaultLocationBundlesObserveWidget, useEclipseWorkspaceTargetLocationObserveValue, null, null);
 		//
-		IObservableValue observeTextTxtPathObserveWidget1 = WidgetProperties
-				.text(SWT.Modify).observe(txtPath);
-		binding1 = bindingContext
-				.bindValue(observeTextTxtPathObserveWidget1,
-						workspaceDirGetTargetLocationObserveValue, strategy,
-						strategy_1);
-
+		IObservableValue observeSelectionBtnIncludeConfigurationBundlesObserveWidget_1 = WidgetProperties.selection().observe(btnIncludeConfigurationBundles);
+		IObservableValue importCnfGetTargetLocationObserveValue = PojoProperties.value("importCnf").observe(targetLocation);
+		bindingContext.bindValue(observeSelectionBtnIncludeConfigurationBundlesObserveWidget_1, importCnfGetTargetLocationObserveValue, null, null);
 		//
-		IObservableValue observeEnabledTxtPathObserveWidget = WidgetProperties
-				.enabled().observe(txtPath);
-		IObservableValue observeSelectionBtnUseDefaultLocationObserveWidget = WidgetProperties
-				.selection().observe(btnUseDefaultLocation);
+		IObservableValue observeSelectionBtnDownloadBundlesObserveWidget = WidgetProperties.selection().observe(btnDownloadBundles);
+		IObservableValue downloadAllGetTargetLocationObserveValue = PojoProperties.value("downloadAll").observe(targetLocation);
+		bindingContext.bindValue(observeSelectionBtnDownloadBundlesObserveWidget, downloadAllGetTargetLocationObserveValue, null, null);
+		//
+		IObservableValue observeEnabledTxtPathObserveWidget = WidgetProperties.enabled().observe(txtPath);
+		IObservableValue observeSelectionBtnUseDefaultLocationObserveWidget = WidgetProperties.selection().observe(btnUseDefaultLocation);
 		UpdateValueStrategy modelToTarget = new UpdateValueStrategy();
-		IConverter converter = new NegateBooleanConverter();
-		modelToTarget.setConverter(converter);
-		bindingContext.bindValue(observeEnabledTxtPathObserveWidget,
-				observeSelectionBtnUseDefaultLocationObserveWidget, null,
-				modelToTarget);
+		modelToTarget.setConverter(new NegateBooleanConverter());
+		bindingContext.bindValue(observeEnabledTxtPathObserveWidget, observeSelectionBtnUseDefaultLocationObserveWidget, new UpdateValueStrategy(UpdateValueStrategy.POLICY_NEVER), modelToTarget);
 		//
-		IObservableValue observeEnabledBtnBrowseObserveWidget = WidgetProperties
-				.enabled().observe(btnBrowse);
-		IObservableValue observeSelectionBtnUseDefaultLocationObserveWidget_1 = WidgetProperties
-				.selection().observe(btnUseDefaultLocation);
-		UpdateValueStrategy strategy_2 = new UpdateValueStrategy();
-		strategy_2.setConverter(new NegateBooleanConverter());
-		bindingContext.bindValue(observeEnabledBtnBrowseObserveWidget,
-				observeSelectionBtnUseDefaultLocationObserveWidget_1, null,
-				strategy_2);
-		//
-		IObservableValue observeEnabledBtnDownloadBundlesObserveWidget = WidgetProperties
-				.enabled().observe(btnDownloadBundles);
-		IObservableValue observeSelectionBtnIncludeConfigurationBundlesObserveWidget = WidgetProperties
-				.selection().observe(btnIncludeConfigurationBundles);
-		bindingContext.bindValue(observeEnabledBtnDownloadBundlesObserveWidget,
-				observeSelectionBtnIncludeConfigurationBundlesObserveWidget,
-				null, null);
-		//
-		IObservableValue observeSelectionBtnDownloadBundlesObserveWidget = WidgetProperties
-				.selection().observe(btnDownloadBundles);
-		IObservableValue downloadAllGetTargetLocationObserveValue = PojoProperties
-				.value("downloadAll").observe(getTargetLocation());
-		bindingContext.bindValue(
-				observeSelectionBtnDownloadBundlesObserveWidget,
-				downloadAllGetTargetLocationObserveValue, null, null);
+		IObservableValue observeEnabledBtnDownloadBundlesObserveWidget = WidgetProperties.enabled().observe(btnDownloadBundles);
+		IObservableValue observeSelectionBtnIncludeConfigurationBundlesObserveWidget = WidgetProperties.selection().observe(btnIncludeConfigurationBundles);
+		bindingContext.bindValue(observeEnabledBtnDownloadBundlesObserveWidget, observeSelectionBtnIncludeConfigurationBundlesObserveWidget, new UpdateValueStrategy(UpdateValueStrategy.POLICY_NEVER), null);
 		//
 		return bindingContext;
 	}
-	
-	
 }
