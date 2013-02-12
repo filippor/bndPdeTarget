@@ -4,14 +4,14 @@ org.eclipse.pde.internal.core.target.TargetDefinition.areContainersEqual(ITarget
 
 -verify licence image
 
--label and image provider
-
--use package instead of bundle verify version
+-DONE label and image provider
 
 -DONE manage custom workspace location(wizard persist)
-	-add UI
+	-DONE add UI
+
 -investigate source provider
--investigate update on build listener
+
+-INPROGRESS (working) investigate update on build listener
 	verify if getBundles in target location can be dynamic
 -investigate launch
 	-group in launch configuration
@@ -19,24 +19,23 @@ org.eclipse.pde.internal.core.target.TargetDefinition.areContainersEqual(ITarget
 
 -new location for repository 
 	-obr maven (use bnd plugin for repository?) 
-	-bridge to bndtools import configuration or use directly
-		use bnd plugin for repository 
 	-karaf feature
 	-verify karaf eik
-	
--resolve osgi capability package
+-new target location with maven dependency of projects in workspace
 
--export target as obr
+-resolve osgi capability,package on repository to create target
+
+-export targetLocation as obr (verify karaf eik)
 
 
 OTHER DIRECTION
 -let bndtools see pde project
 -bndtools plugin for p2
--bndtools plugin for target
+-bndtools plugin for targetLocation
 
 VARIOUS
 -p2 obr maven bridge
-	add pde project maven dependency to target
+
 
 
 -internazionalize
@@ -45,5 +44,4 @@ VARIOUS
 -mavenize(tycho or bnd)
 
 -create blog 
--github and blog
 -planet eclipse  planet osgi
