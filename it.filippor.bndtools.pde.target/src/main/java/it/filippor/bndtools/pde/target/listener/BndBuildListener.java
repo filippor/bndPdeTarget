@@ -1,27 +1,32 @@
 package it.filippor.bndtools.pde.target.listener;
 
+import it.filippor.bndtools.pde.target.Activator;
+import it.filippor.bndtools.pde.target.location.BndWorkspaceTargetLocation;
 import it.filippor.bndtools.pde.target.location.IBndWorkspaceTargetLocation;
-
-import java.lang.ref.WeakReference;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
 
 import org.bndtools.build.api.BuildListener;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.pde.core.target.ITargetDefinition;
+import org.eclipse.pde.core.target.ITargetLocation;
+import org.eclipse.pde.core.target.ITargetPlatformService;
 import org.eclipse.pde.core.target.LoadTargetDefinitionJob;
 
 public class BndBuildListener implements BuildListener {
+	
+	ITargetPlatformService targetService;
+	public BndBuildListener() {
+		targetService = (ITargetPlatformService) Activator.getDefault().acquireService(ITargetPlatformService.class.getName());
+	}
+//	private static List<WeakReference<IBndWorkspaceTargetLocation>> listeners = new LinkedList<WeakReference<IBndWorkspaceTargetLocation>>();
 
-	private static List<WeakReference<IBndWorkspaceTargetLocation>> listeners = new LinkedList<WeakReference<IBndWorkspaceTargetLocation>>();
-
-	public static synchronized void addListener(
+	/*public static synchronized void addListener(
 			IBndWorkspaceTargetLocation listener) {
 		listeners.add(new WeakReference<IBndWorkspaceTargetLocation>(listener));
-	}
+	}*/
 
-	public static synchronized void removeListener(
+/*	public static synchronized void removeListener(
 			IBndWorkspaceTargetLocation listener) {
 		System.gc();
 		for (Iterator<WeakReference<IBndWorkspaceTargetLocation>> iterator = listeners
@@ -32,7 +37,7 @@ public class BndBuildListener implements BuildListener {
 			}
 		}
 	}
-
+*/
 	@Override
 	public void buildStarting(IProject project) {
 		// do nothing
@@ -41,7 +46,7 @@ public class BndBuildListener implements BuildListener {
 
 	@Override
 	public synchronized void builtBundles(IProject project, IPath[] paths) {
-		System.gc();
+		/*System.gc();
 		for (Iterator<WeakReference<IBndWorkspaceTargetLocation>> iterator = listeners
 				.iterator(); iterator.hasNext();) {
 			WeakReference<IBndWorkspaceTargetLocation> location =iterator.next();
@@ -54,6 +59,21 @@ public class BndBuildListener implements BuildListener {
 //				targetLocation.getTargetDefinition().resolve(new NullProgressMonitor());
 //				
 			}
+		}*/
+		
+		try {
+			
+			 ITargetDefinition targetDefinition = targetService.getWorkspaceTargetHandle().getTargetDefinition();
+			for(ITargetLocation location: targetDefinition.getTargetLocations()){
+				if(BndWorkspaceTargetLocation.TYPE.equals(location.getType())
+						&& ((IBndWorkspaceTargetLocation)location).isUseEclipseWorkspace()){
+					((IBndWorkspaceTargetLocation)location).update();
+					LoadTargetDefinitionJob.load(targetDefinition);
+					return;
+				}
+			}
+		} catch (CoreException e) {
+			throw new RuntimeException(e);
 		}
 	}
 

@@ -1,7 +1,6 @@
 package it.filippor.bndtools.pde.target.location;
 
 import it.filippor.bndtools.pde.target.Activator;
-import it.filippor.bndtools.pde.target.listener.BndBuildListener;
 
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
@@ -130,7 +129,7 @@ public class BndWorkspaceTargetLocationTmp extends AbstractBundleContainer
 	}
 	@Override
 	protected void clearResolutionStatus() {
-		BndBuildListener.removeListener(this);
+//		BndBuildListener.removeListener(this);
 		super.clearResolutionStatus();
 	}
 	@Override
@@ -299,8 +298,8 @@ public class BndWorkspaceTargetLocationTmp extends AbstractBundleContainer
 	protected TargetBundle[] resolveBundles(ITargetDefinition definition,
 			final IProgressMonitor monitor) throws CoreException {
 		this.setTargetDefinition(definition);
-		if(useEclipseWorkspace)
-			BndBuildListener.addListener(this);
+//		if(useEclipseWorkspace)
+//			BndBuildListener.addListener(this);
 		try {
 			monitor.beginTask("resolve bundle", 2);
 			Collection<Project> allProjects = getWorkspace(workspaceDir)
