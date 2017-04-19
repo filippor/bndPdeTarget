@@ -257,10 +257,6 @@ public class BndWorkspaceTargetLocationTmp extends AbstractBundleContainer
 		return null;
 	}
 
-	@Override
-	public boolean isContentEqual(AbstractBundleContainer container) {
-		return equals(container);
-	}
 
 	@Override
 	public boolean equals(Object obj) {
